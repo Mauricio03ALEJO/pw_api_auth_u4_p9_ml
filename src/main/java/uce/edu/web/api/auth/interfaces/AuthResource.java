@@ -4,23 +4,30 @@ import java.time.Instant;
 import java.util.Set;
 
 import io.smallrye.jwt.build.Jwt;
+import jakarta.inject.Inject;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.QueryParam;
+import uce.edu.web.api.auth.application.UsuarioService;
+import uce.edu.web.api.auth.application.representation.UsuarioRepresentation;
 
+
+
+@Path("/auth")
 public class AuthResource {
+
+    @Inject
+    UsuarioService usuarioService;
+
     @GET
     @Path("/token")
     public TokenResponse token(
-            @QueryParam("user") String user,
+            @QueryParam("usuario") String user,
             @QueryParam("password") String password) {
 
-        // Donde se compara el password y usuario contra labase
-        // TAREA
-        boolean ok = true;
-        String role = "admin";
-        if (ok) {
+        UsuarioRepresentation usuario = usuarioService.validarCredenciales(user, password);
 
+        if (usuario != null) {
             String issuer = "matricula-auth";
             long ttl = 3600;
 
@@ -29,12 +36,12 @@ public class AuthResource {
 
             String jwt = Jwt.issuer(issuer)
                     .subject(user)
-                    .groups(Set.of(role)) // roles: user / admin
+                    .groups(Set.of(usuario.rol))
                     .issuedAt(now)
                     .expiresAt(exp)
                     .sign();
 
-            return new TokenResponse(jwt, exp.getEpochSecond(), role);
+            return new TokenResponse(jwt, exp.getEpochSecond(), usuario.rol);
         } else {
             return null;
         }
